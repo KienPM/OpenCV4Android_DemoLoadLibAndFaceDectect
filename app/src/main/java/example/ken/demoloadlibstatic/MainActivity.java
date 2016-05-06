@@ -2,7 +2,6 @@ package example.ken.demoloadlibstatic;
 
 import android.content.Context;
 import android.hardware.Camera;
-import android.hardware.camera2.CameraManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,6 +18,7 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
+import org.opencv.core.Range;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
@@ -34,8 +34,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     private static final String TAG = "OpenCV";
 
     private CameraBridgeViewBase openCvCameraView;
-    private CascadeClassifier cascadeClassifier;
-    private Mat grayscaleImage;
+    private CascadeClassifier faceCascadeClassifier, eyeCascadeClassifier;
+    private Mat grayScaleImage;
     private int absoluteFaceSize;
     private int cameraId = 0;
     private int numberOfCameras = 0;
@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     private void initializeOpenCVDependencies() {
         try {
+            // Load the face cascade classifier
             // Copy the resource into a temp file so OpenCV can load it
             InputStream is = getResources().openRawResource(R.raw.haarcascade_frontalface_default);
             File cascadeDir = getDir("cascade", Context.MODE_PRIVATE);
@@ -70,8 +71,20 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             }
             is.close();
             os.close();
-            // Load the cascade classifier
-            cascadeClassifier = new CascadeClassifier(mCascadeFile.getAbsolutePath());
+            faceCascadeClassifier = new CascadeClassifier(mCascadeFile.getAbsolutePath());
+
+            // Load the eye cascade classifier
+            is = getResources().openRawResource(R.raw.haarcascade_eye);
+            cascadeDir = getDir("cascade", Context.MODE_PRIVATE);
+            mCascadeFile = new File(cascadeDir, "haarcascade_eye.xml");
+            os = new FileOutputStream(mCascadeFile);
+
+            while ((bytesRead = is.read(buffer)) != -1) {
+                os.write(buffer, 0, bytesRead);
+            }
+            is.close();
+            os.close();
+            eyeCascadeClassifier = new CascadeClassifier(mCascadeFile.getAbsolutePath());
         } catch (Exception e) {
             Log.e("OpenCVActivity", "Error loading cascade", e);
         }
@@ -106,7 +119,7 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public void onCameraViewStarted(int width, int height) {
-        grayscaleImage = new Mat(height, width, CvType.CV_8UC4);
+        grayScaleImage = new Mat(height, width, CvType.CV_8UC4);
         // The faces will be a 20% of the height of the screen
         absoluteFaceSize = (int) (height * 0.2);
     }
@@ -118,21 +131,34 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
 
     @Override
     public Mat onCameraFrame(Mat inputFrame) {
-        // Create a grayscale image
-        Imgproc.cvtColor(inputFrame, grayscaleImage, Imgproc.COLOR_RGBA2RGB);
+        // Create a gray scale image
+        Imgproc.cvtColor(inputFrame, grayScaleImage, Imgproc.COLOR_RGBA2RGB);
 
         MatOfRect faces = new MatOfRect();
 
         // Use the classifier to detect faces
-        if (cascadeClassifier != null) {
-            cascadeClassifier.detectMultiScale(grayscaleImage, faces, 1.1, 2, 2,
+        if (faceCascadeClassifier != null) {
+            faceCascadeClassifier.detectMultiScale(grayScaleImage, faces, 1.1, 2, 2,
                     new Size(absoluteFaceSize, absoluteFaceSize), new Size());
         }
 
         // If there are any faces found, draw a rectangle around it
         Rect[] facesArray = faces.toArray();
         for (int i = 0; i < facesArray.length; i++) {
+            // Draw rectangle around face
             Core.rectangle(inputFrame, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0, 255), 3);
+
+            // Detect eyes on face
+            Mat grayScaleFace = new Mat(grayScaleImage, facesArray[i]);
+            Mat colorFace = new Mat(inputFrame, facesArray[i]);
+            MatOfRect eyes = new MatOfRect();
+            if (eyeCascadeClassifier != null) {
+                eyeCascadeClassifier.detectMultiScale(grayScaleFace, eyes);
+            }
+            Rect[] eyesArray = eyes.toArray();
+            for (int j = 0; j < eyesArray.length; ++j) {
+                Core.rectangle(colorFace, eyesArray[j].tl(), eyesArray[j].br(), new Scalar(255, 0, 0, 255), 2);
+            }
         }
         return inputFrame;
     }
