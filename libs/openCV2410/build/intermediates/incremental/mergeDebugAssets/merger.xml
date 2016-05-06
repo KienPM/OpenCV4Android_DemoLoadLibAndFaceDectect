@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merger version="3"><dataSet config="main"><source path="E:\Code\OpenCV4Android\DemoLoadLibStatic\libs\openCV2410\src\main\assets"/><source path="E:\Code\OpenCV4Android\DemoLoadLibStatic\libs\openCV2410\build\generated\assets\shaders\debug"/></dataSet><dataSet config="debug"><source path="E:\Code\OpenCV4Android\DemoLoadLibStatic\libs\openCV2410\src\debug\assets"/></dataSet></merger>
