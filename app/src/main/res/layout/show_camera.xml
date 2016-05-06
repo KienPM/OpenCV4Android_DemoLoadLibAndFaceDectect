@@ -7,10 +7,17 @@
 
     <org.opencv.android.JavaCameraView
         android:id="@+id/show_camera_activity_java_surface_view"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:visibility="gone"
         opencv:camera_id="any"
         opencv:show_fps="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="onClickSwapCamera"
+        android:text="Swap camera"
+        />
 
 </FrameLayout>

@@ -1,11 +1,13 @@
 package example.ken.demoloadlibstatic;
 
 import android.content.Context;
+import android.hardware.Camera;
+import android.hardware.camera2.CameraManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.MenuItem;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.WindowManager;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -35,6 +37,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     private CascadeClassifier cascadeClassifier;
     private Mat grayscaleImage;
     private int absoluteFaceSize;
+    private int cameraId = 0;
+    private int numberOfCameras = 0;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -53,9 +57,9 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
     private void initializeOpenCVDependencies() {
         try {
             // Copy the resource into a temp file so OpenCV can load it
-            InputStream is = getResources().openRawResource(R.raw.lbpcascade_frontalface);
+            InputStream is = getResources().openRawResource(R.raw.haarcascade_frontalface_default);
             File cascadeDir = getDir("cascade", Context.MODE_PRIVATE);
-            File mCascadeFile = new File(cascadeDir, "lbpcascade_frontalface.xml");
+            File mCascadeFile = new File(cascadeDir, "haarcascade_frontalface_default.xml");
             FileOutputStream os = new FileOutputStream(mCascadeFile);
 
 
@@ -84,6 +88,8 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
         openCvCameraView = (JavaCameraView) findViewById(R.id.show_camera_activity_java_surface_view);
         openCvCameraView.setVisibility(SurfaceView.VISIBLE);
         openCvCameraView.setCvCameraViewListener(this);
+
+        numberOfCameras = Camera.getNumberOfCameras();
     }
 
     @Override
@@ -129,5 +135,15 @@ public class MainActivity extends AppCompatActivity implements CameraBridgeViewB
             Core.rectangle(inputFrame, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0, 255), 3);
         }
         return inputFrame;
+    }
+
+    public void onClickSwapCamera(View v) {
+        if (numberOfCameras < 2) {
+            return;
+        }
+        cameraId = cameraId ^ 1; //bitwise not operation to flip 1 to 0 and vice versa
+        openCvCameraView.disableView();
+        openCvCameraView.setCameraIndex(cameraId);
+        openCvCameraView.enableView();
     }
 }
